@@ -1307,7 +1307,7 @@ void Element::OnAttributeChange(const AttributeNameList& changed_attributes)
 {
 	if (changed_attributes.find("id") != changed_attributes.end())
 	{
-		id = GetAttribute< String >("id", "").ToLower();
+		id = GetAttribute< String >("id", "");
 		style->DirtyDefinition();
 	}
 
