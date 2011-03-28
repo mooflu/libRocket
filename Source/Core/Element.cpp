@@ -1180,6 +1180,8 @@ Element* Element::GetElementById(const String& id)
 		return this;
 	else if (id == "#document")
 		return GetOwnerDocument();
+	else if (id == "#parent")
+		return this->parent;
 	else
 	{
 		Element* search_root = GetOwnerDocument();
