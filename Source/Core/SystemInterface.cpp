@@ -117,5 +117,15 @@ void SystemInterface::OnReferenceDeactivate()
 	Release();
 }
 
+Rocket::Core::WString SystemInterface::GetClipboardContent()
+{
+	return clipboard_content;
+}
+
+void SystemInterface::SetClipboardContent( const Rocket::Core::WString &content )
+{
+	clipboard_content = content;
+}
+
 }
 }
