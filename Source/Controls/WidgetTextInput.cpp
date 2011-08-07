@@ -242,7 +242,7 @@ void WidgetTextInput::DispatchChangeEvent()
 // the state of the cursor.
 void WidgetTextInput::ProcessEvent(Core::Event& event)
 {
-	if (parent->IsDisabled())
+	if ( parent->IsDisabled() && !(event == "resize"))
 		return;
 
 	if (event == "keydown")
