@@ -31,6 +31,7 @@
 #include <Rocket/Core/Log.h>
 #include <Rocket/Core/ReferenceCountable.h>
 #include <Rocket/Core/String.h>
+#include <Rocket/Core/WString.h>
 #include <Rocket/Core/Header.h>
 
 namespace Rocket {
@@ -79,11 +80,21 @@ public:
 	/// @return True to continue execution, false to break into the debugger.
 	virtual bool LogMessage(Log::Type type, const String& message);
 
+	/// Get the current contents of the clipboard.
+	/// @return Contents of the clipboard as a string.
+	virtual Rocket::Core::WString GetClipboardContent();
+
+	/// Set the contents of the clipboard.
+	/// @param[in] content The content for the clipboard
+	virtual void SetClipboardContent(const Rocket::Core::WString &content);
+
 	/// Called when this system interface is no longer required.
 	virtual void Release();
 
 protected:
 	virtual void OnReferenceDeactivate();
+
+	Core::WString clipboard_content;
 };
 
 }
