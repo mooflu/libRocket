@@ -88,6 +88,12 @@ public:
 	/// @param[in] content The content for the clipboard
 	virtual void SetClipboardContent(const Rocket::Core::WString &content);
 
+	/// Activate keyboard (for touchscreen devices)
+	virtual void ActivateKeyboard();
+	
+	/// Deactivate keyboard (for touchscreen devices)
+	virtual void DeactivateKeyboard();
+	
 	/// Called when this system interface is no longer required.
 	virtual void Release();
 
