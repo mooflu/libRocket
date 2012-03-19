@@ -64,40 +64,40 @@ void TemplateCache::Shutdown()
 	delete instance;
 }
 
-Template* TemplateCache::LoadTemplate(const String& name)
+Template* TemplateCache::LoadTemplate(const String& path)
 {
 	// Check if the template is already loaded
-	Templates::iterator itr = instance->templates.find(name);
+	Templates::iterator itr = instance->templates.find(path);
 	if (itr != instance->templates.end())
 		return (*itr).second;
 
 	// Nope, we better load it
 	Template* new_template = NULL;
 	StreamFile* stream = new StreamFile();
-	if (stream->Open(name))
+	if (stream->Open(path))
 	{
 		new_template = new Template();
 		if (!new_template->Load(stream))
 		{
-			Log::Message(Log::LT_ERROR, "Failed to load template %s.", name.CString());
+			Log::Message(Log::LT_ERROR, "Failed to load template %s.", path.CString());
 			delete new_template;
 			new_template = NULL;
 		}
 		else if (new_template->GetName().Empty())
 		{
-			Log::Message(Log::LT_ERROR, "Failed to load template %s, template is missing its name.", name.CString());
+			Log::Message(Log::LT_ERROR, "Failed to load template %s, template is missing its name.", path.CString());
 			delete new_template;
 			new_template = NULL;
 		}
 		else
 		{
-			instance->templates[name] = new_template;
+			instance->templates[path] = new_template;
 			instance->template_ids[new_template->GetName()] = new_template;
 		}
 	}
 	else
 	{
-		Log::Message(Log::LT_ERROR, "Failed to open template file %s.", name.CString());		
+		Log::Message(Log::LT_ERROR, "Failed to open template file %s.", path.CString());		
 	}
 	stream->RemoveReference();
 
@@ -110,6 +110,19 @@ Template* TemplateCache::GetTemplate(const String& name)
 	Templates::iterator itr = instance->template_ids.find(name);
 	if (itr != instance->template_ids.end())
 		return (*itr).second;
+
+	// Couldn't find it by name, try with path
+	itr = instance->templates.find(name);
+	if (itr != instance->templates.end())
+		return (*itr).second;
+
+	// Not in cache. If there's a file by this name, try loading it.
+	StreamFile* stream = new StreamFile();
+	if (stream->Open(name))
+	{
+		stream->RemoveReference();
+		return LoadTemplate(name);
+	}
 
 	return NULL;
 }

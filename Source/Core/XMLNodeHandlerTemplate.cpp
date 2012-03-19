@@ -45,20 +45,73 @@ XMLNodeHandlerTemplate::~XMLNodeHandlerTemplate()
 
 Element* XMLNodeHandlerTemplate::ElementStart(XMLParser* parser, const String& name, const XMLAttributes& attributes)
 {
-	name;
-	ROCKET_ASSERT(name == "template");
-	(name);
-
-	String template_name = attributes.Get<String>("src", "");
-
 	// Tell the parser to use the element handler for all child nodes
 	parser->PushDefaultHandler();
 
-	return XMLParseTools::ParseTemplate(parser->GetParseFrame()->element, template_name);
+	Element* parent = parser->GetParseFrame()->element;
+
+	// Attempt to instance the element with the instancer
+	templateElement = Factory::InstanceElement(parent, name, name, attributes);
+	if (!templateElement)
+	{
+		Log::Message(Log::LT_ERROR, "Failed to create element for tag %s, instancer returned NULL.", name.CString());
+		return NULL;
+	}
+
+	// Add the element to its parent (remove the reference to templateElement in ElementEnd)
+	parent->AppendChild(templateElement);
+
+	//use the templateElement as a temporary container to hold the template content blocks
+	return templateElement;
 }
 
-bool XMLNodeHandlerTemplate::ElementEnd(XMLParser* ROCKET_UNUSED(parser), const String& ROCKET_UNUSED(name))
+bool XMLNodeHandlerTemplate::ElementEnd(XMLParser* parser, const String& ROCKET_UNUSED(name))
 {
+	Element *parent = templateElement->GetParentNode();
+	String template_name = templateElement->GetAttribute<String>("src", "");
+
+	//find all content block elements from document
+	ElementList docBlockElements;
+	templateElement->GetElementsByTagName(docBlockElements, "block");
+
+	//we are done with the templateElement, remove it and its children
+	templateElement->GetParentNode()->RemoveChild(templateElement);
+	templateElement->RemoveReference();
+
+	//parse and insert template tree into parent
+	Element *tree = XMLParseTools::ParseTemplate(parent, template_name);
+
+	//find all the block elements from loaded template (default content)
+	ElementList templateBlockElements;
+	tree->GetElementsByTagName(templateBlockElements, "block");
+
+	for (ElementList::iterator itr = templateBlockElements.begin(); itr != templateBlockElements.end(); ++itr)
+	{
+		Element *item = (*itr);
+		String name = item->GetAttribute<String>("name","");
+
+		for (ElementList::iterator itrC = docBlockElements.begin(); itrC != docBlockElements.end(); ++itrC)
+		{
+			String itemName = (*itrC)->GetAttribute<String>("name","");
+
+			if( name == itemName)
+			{
+				//it's a match, now replace the default contents of this node
+				//shouldn't have more than one child (default content)
+				while( item->HasChildNodes())
+				{
+					item->RemoveChild( item->GetFirstChild());
+				}
+
+				Element *itemC = (*itrC);
+				for( int i=0; i<itemC->GetNumChildren(); i++)
+				{
+					item->AppendChild(itemC->GetChild(i));
+				}
+			}
+		}
+	}
+
 	return true;
 }
 

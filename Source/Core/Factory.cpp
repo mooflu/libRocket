@@ -49,7 +49,6 @@
 #include "XMLNodeHandlerDefault.h"
 #include "XMLNodeHandlerHead.h"
 #include "XMLNodeHandlerTemplate.h"
-#include "XMLNodeHandlerTemplateData.h"
 #include "XMLParseTools.h"
 
 namespace Rocket {
@@ -121,7 +120,6 @@ bool Factory::Initialise()
 	XMLParser::RegisterNodeHandler("body", new XMLNodeHandlerBody())->RemoveReference();
 	XMLParser::RegisterNodeHandler("head", new XMLNodeHandlerHead())->RemoveReference();
 	XMLParser::RegisterNodeHandler("template", new XMLNodeHandlerTemplate())->RemoveReference();
-	XMLParser::RegisterNodeHandler("template_data", new XMLNodeHandlerTemplateData())->RemoveReference();
 
 	return true;
 }

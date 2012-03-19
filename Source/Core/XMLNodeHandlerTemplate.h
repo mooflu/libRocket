@@ -28,7 +28,7 @@
 #ifndef ROCKETCOREXMLNODEHANDLERTEMPLATE_H
 #define ROCKETCOREXMLNODEHANDLERTEMPLATE_H
 
-#include <Rocket/Core/XMLNodeHandler.h>
+#include "XMLNodeHandlerDefault.h"
 
 namespace Rocket {
 namespace Core {
@@ -39,7 +39,7 @@ namespace Core {
 	@author Lloyd Weehuizen
  */
 
-class XMLNodeHandlerTemplate : public XMLNodeHandler
+class XMLNodeHandlerTemplate : public XMLNodeHandlerDefault
 {
 public:
 	XMLNodeHandlerTemplate();
@@ -53,6 +53,8 @@ public:
 	virtual bool ElementData(XMLParser* parser, const String& data);
 
 	virtual void Release();
+private:
+	Element* templateElement;
 };
 
 }
