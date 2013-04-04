@@ -14,7 +14,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -98,7 +98,7 @@ Element::Element(const String& _tag) : absolute_offset(0, 0), relative_offset_ba
 	stacking_context_dirty = false;
 
 	font_face_handle = NULL;
-
+	
 	clipping_ignore_depth = 0;
 	clipping_enabled = false;
 	clipping_state_dirty = true;
@@ -113,7 +113,7 @@ Element::Element(const String& _tag) : absolute_offset(0, 0), relative_offset_ba
 
 Element::~Element()
 {
-	ROCKET_ASSERT(parent == NULL);
+	ROCKET_ASSERT(parent == NULL);	
 
 	PluginRegistry::NotifyElementDestroy(this);
 
@@ -273,7 +273,7 @@ String Element::GetAddress(bool include_pseudo_classes) const
 
 	if (include_pseudo_classes)
 	{
-		const PseudoClassList& pseudo_classes = style->GetActivePseudoClasses();
+		const PseudoClassList& pseudo_classes = style->GetActivePseudoClasses();		
 		for (PseudoClassList::const_iterator i = pseudo_classes.begin(); i != pseudo_classes.end(); ++i)
 		{
 			address += ":";
@@ -293,7 +293,7 @@ String Element::GetAddress(bool include_pseudo_classes) const
 // Sets the position of this element, as a two-dimensional offset from another element.
 void Element::SetOffset(const Vector2f& offset, Element* _offset_parent, bool _offset_fixed)
 {
-	_offset_fixed |= GetProperty< int >(POSITION) == POSITION_FIXED;
+	_offset_fixed |= GetPosition() == POSITION_FIXED;
 
 	// If our offset has definitely changed, or any of our parenting has, then these are set and
 	// updated based on our left / right / top / bottom properties.
@@ -514,7 +514,7 @@ bool Element::SetProperty(const String& name, const Property& property)
 // Returns one of this element's properties.
 const Property* Element::GetProperty(const String& name)
 {
-	return style->GetProperty(name);
+	return style->GetProperty(name);	
 }
 
 // Returns one of this element's properties.
@@ -527,6 +527,82 @@ const Property* Element::GetLocalProperty(const String& name)
 float Element::ResolveProperty(const String& name, float base_value)
 {
 	return style->ResolveProperty(name, base_value);
+}
+
+// Resolves one of this element's style.
+float Element::ResolveProperty(const Property *property, float base_value)
+{
+	return style->ResolveProperty(property, base_value);
+}
+
+void Element::GetBorderWidthProperties(const Property **border_top, const Property **border_bottom, const Property **border_left, const Property **bottom_right)
+{
+	style->GetBorderWidthProperties(border_top, border_bottom, border_left, bottom_right);
+}
+
+void Element::GetMarginProperties(const Property **margin_top, const Property **margin_bottom, const Property **margin_left, const Property **margin_right)
+{
+	style->GetMarginProperties(margin_top, margin_bottom, margin_left, margin_right);
+}
+
+void Element::GetPaddingProperties(const Property **padding_top, const Property **padding_bottom, const Property **padding_left, const Property **padding_right)
+{
+	style->GetPaddingProperties(padding_top, padding_bottom, padding_left, padding_right);
+}
+
+void Element::GetDimensionProperties(const Property **width, const Property **height)
+{
+	style->GetDimensionProperties(width, height);
+}
+
+void Element::GetLocalDimensionProperties(const Property **width, const Property **height)
+{
+	style->GetLocalDimensionProperties(width, height);
+}
+
+void Element::GetOverflow(int *overflow_x, int *overflow_y)
+{
+	style->GetOverflow(overflow_x, overflow_y);
+}
+
+int Element::GetPosition()
+{
+	return style->GetPosition();
+}
+
+int Element::GetFloat()
+{
+	return style->GetFloat();
+}
+
+int Element::GetDisplay()
+{
+	return style->GetDisplay();
+}
+
+int Element::GetWhitespace()
+{
+	return style->GetWhitespace();
+}
+
+const Property *Element::GetLineHeightProperty()
+{
+	return style->GetLineHeightProperty();
+}
+
+int Element::GetTextAlign()
+{
+	return style->GetTextAlign();
+}
+
+int Element::GetTextTransform()
+{
+	return style->GetTextTransform();
+}
+
+const Property *Element::GetVerticalAlignProperty()
+{
+	return style->GetVerticalAlignProperty();
 }
 
 // Iterates over the properties defined on this element.
@@ -626,7 +702,7 @@ void Element::SetAttributes(const ElementAttributes* _attributes)
 	AttributeNameList changed_attributes;
 
 	while (_attributes->Iterate(index, key, value))
-	{
+	{		
 		changed_attributes.insert(key);
 		attributes.Set(key, *value);
 	}
@@ -795,7 +871,7 @@ ElementDocument* Element::GetOwnerDocument()
 {
 	if (parent == NULL)
 		return NULL;
-
+	
 	if (!owner_document)
 	{
 		owner_document = parent->GetOwnerDocument();
@@ -1019,6 +1095,8 @@ void Element::ScrollIntoView(bool align_with_top)
 // Appends a child to this element
 void Element::AppendChild(Element* child, bool dom_element)
 {
+	LockLayout(true);
+
 	child->AddReference();
 	child->SetParent(this);
 	if (dom_element)
@@ -1038,6 +1116,8 @@ void Element::AppendChild(Element* child, bool dom_element)
 
 	if (dom_element)
 		DirtyLayout();
+
+	LockLayout(false);
 }
 
 // Adds a child to this element, directly after the adjacent element. Inherits
@@ -1063,6 +1143,8 @@ void Element::InsertBefore(Element* child, Element* adjacent_element)
 
 	if (found_child)
 	{
+		LockLayout(true);
+
 		child->AddReference();
 		child->SetParent(this);
 
@@ -1079,11 +1161,13 @@ void Element::InsertBefore(Element* child, Element* adjacent_element)
 		child->OnChildAdd(child);
 		DirtyStackingContext();
 		DirtyStructure();
+
+		LockLayout(false);
 	}
 	else
 	{
 		AppendChild(child);
-	}
+	}	
 }
 
 // Replaces the second node with the first node.
@@ -1104,12 +1188,16 @@ bool Element::ReplaceChild(Element* inserted_element, Element* replaced_element)
 		return false;
 	}
 
+	LockLayout(true);
+
 	children.insert(insertion_point, inserted_element);
 	RemoveChild(replaced_element);
 
 	inserted_element->GetStyle()->DirtyDefinition();
 	inserted_element->GetStyle()->DirtyProperties();
 	inserted_element->OnChildAdd(inserted_element);
+
+	LockLayout(false);
 
 	return true;
 }
@@ -1124,6 +1212,8 @@ bool Element::RemoveChild(Element* child)
 		// Add the element to the delete list
 		if ((*itr) == child)
 		{
+			LockLayout(true);
+
 			// Inform the context of the element's pending removal (if we have a valid context).
 			Context* context = GetContext();
 			if (context)
@@ -1165,6 +1255,8 @@ bool Element::RemoveChild(Element* child)
 			DirtyStackingContext();
 			DirtyStructure();
 
+			LockLayout(false);
+
 			return true;
 		}
 
@@ -1203,6 +1295,12 @@ void Element::GetElementsByTagName(ElementList& elements, const String& tag)
 	return ElementUtilities::GetElementsByTagName(elements, this, tag);
 }
 
+// Get all elements with the given class set on them.
+void Element::GetElementsByClassName(ElementList& elements, const String& class_name)
+{
+	return ElementUtilities::GetElementsByClassName(elements, this, class_name);
+}
+
 // Access the event dispatcher
 EventDispatcher* Element::GetEventDispatcher() const
 {
@@ -1232,25 +1330,25 @@ ElementScroll* Element::GetElementScroll() const
 {
 	return scroll;
 }
-
+	
 int Element::GetClippingIgnoreDepth()
 {
 	if (clipping_state_dirty)
 	{
 		IsClippingEnabled();
 	}
-
+	
 	return clipping_ignore_depth;
 }
-
+	
 bool Element::IsClippingEnabled()
 {
 	if (clipping_state_dirty)
 	{
 		// Is clipping enabled for this element, yes unless both overlow properties are set to visible
-		clipping_enabled = style->GetProperty(OVERFLOW_X)->Get< int >() != OVERFLOW_VISIBLE
+		clipping_enabled = style->GetProperty(OVERFLOW_X)->Get< int >() != OVERFLOW_VISIBLE 
 							|| style->GetProperty(OVERFLOW_Y)->Get< int >() != OVERFLOW_VISIBLE;
-
+		
 		// Get the clipping ignore depth from the clip property
 		clipping_ignore_depth = 0;
 		const Property* clip_property = GetProperty(CLIP);
@@ -1258,10 +1356,10 @@ bool Element::IsClippingEnabled()
 			clipping_ignore_depth = clip_property->Get< int >();
 		else if (clip_property->Get< int >() == CLIP_NONE)
 			clipping_ignore_depth = -1;
-
+		
 		clipping_state_dirty = false;
 	}
-
+	
 	return clipping_enabled;
 }
 
@@ -1342,26 +1440,38 @@ void Element::OnAttributeChange(const AttributeNameList& changed_attributes)
 // Called when properties on the element are changed.
 void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 {
-	// Force a relayout if any of the changed properties require it.
-	for (PropertyNameList::const_iterator i = changed_properties.begin(); i != changed_properties.end(); ++i)
+	bool all_dirty = StyleSheetSpecification::GetRegisteredProperties() == changed_properties;
+
+	if (!IsLayoutDirty())
 	{
-		const PropertyDefinition* property_definition = StyleSheetSpecification::GetProperty(*i);
-		if (property_definition)
+		if (all_dirty)
 		{
-			if (property_definition->IsLayoutForced())
+			DirtyLayout();
+		}
+		else
+		{
+			// Force a relayout if any of the changed properties require it.
+			for (PropertyNameList::const_iterator i = changed_properties.begin(); i != changed_properties.end(); ++i)
 			{
-				DirtyLayout();
-				break;
+				const PropertyDefinition* property_definition = StyleSheetSpecification::GetProperty(*i);
+				if (property_definition)
+				{
+					if (property_definition->IsLayoutForced())
+					{
+						DirtyLayout();
+						break;
+					}
+				}
 			}
 		}
 	}
 
 	// Update the visibility.
-	if (changed_properties.find(VISIBILITY) != changed_properties.end() ||
+	if (all_dirty || changed_properties.find(VISIBILITY) != changed_properties.end() ||
 		changed_properties.find(DISPLAY) != changed_properties.end())
 	{
-		bool new_visibility = GetProperty< int >(VISIBILITY) == VISIBILITY_VISIBLE &&
-							  GetProperty< int >(DISPLAY) != DISPLAY_NONE;
+		bool new_visibility = GetDisplay() != DISPLAY_NONE &&
+							  GetProperty< int >(VISIBILITY) == VISIBILITY_VISIBLE;
 
 		if (visible != new_visibility)
 		{
@@ -1371,7 +1481,8 @@ void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 				parent->DirtyStackingContext();
 		}
 
-		if (changed_properties.find(DISPLAY) != changed_properties.end())
+		if (all_dirty || 
+			changed_properties.find(DISPLAY) != changed_properties.end())
 		{
 			if (parent != NULL)
 				parent->DirtyStructure();
@@ -1379,7 +1490,8 @@ void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 	}
 
 	// Update the position.
-	if (changed_properties.find(LEFT) != changed_properties.end() ||
+	if (all_dirty ||
+		changed_properties.find(LEFT) != changed_properties.end() ||
 		changed_properties.find(RIGHT) != changed_properties.end() ||
 		changed_properties.find(TOP) != changed_properties.end() ||
 		changed_properties.find(BOTTOM) != changed_properties.end())
@@ -1389,7 +1501,8 @@ void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 	}
 
 	// Update the z-index.
-	if (changed_properties.find(Z_INDEX) != changed_properties.end())
+	if (all_dirty || 
+		changed_properties.find(Z_INDEX) != changed_properties.end())
 	{
 		const Property* z_index_property = GetProperty(Z_INDEX);
 
@@ -1443,11 +1556,13 @@ void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 	}
 
 	// Dirty the background if it's changed.
-	if (changed_properties.find(BACKGROUND_COLOR) != changed_properties.end())
+	if (all_dirty ||
+		changed_properties.find(BACKGROUND_COLOR) != changed_properties.end())
 		background->DirtyBackground();
 
 	// Dirty the border if it's changed.
-	if (changed_properties.find(BORDER_TOP_WIDTH) != changed_properties.end() ||
+	if (all_dirty || 
+		changed_properties.find(BORDER_TOP_WIDTH) != changed_properties.end() ||
 		changed_properties.find(BORDER_RIGHT_WIDTH) != changed_properties.end() ||
 		changed_properties.find(BORDER_BOTTOM_WIDTH) != changed_properties.end() ||
 		changed_properties.find(BORDER_LEFT_WIDTH) != changed_properties.end() ||
@@ -1458,7 +1573,8 @@ void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 		border->DirtyBorder();
 
 	// Fetch a new font face if it has been changed.
-	if (changed_properties.find(FONT_FAMILY) != changed_properties.end() ||
+	if (all_dirty ||
+		changed_properties.find(FONT_FAMILY) != changed_properties.end() ||
 		changed_properties.find(FONT_CHARSET) != changed_properties.end() ||
 		changed_properties.find(FONT_WEIGHT) != changed_properties.end() ||
 		changed_properties.find(FONT_STYLE) != changed_properties.end() ||
@@ -1495,9 +1611,10 @@ void Element::OnPropertyChange(const PropertyNameList& changed_properties)
 		else if (new_font_face_handle != NULL)
 			new_font_face_handle->RemoveReference();
 	}
-
+	
 	// Check for clipping state changes
-	if (changed_properties.find(CLIP) != changed_properties.end() ||
+	if (all_dirty ||
+		changed_properties.find(CLIP) != changed_properties.end() ||
 		changed_properties.find(OVERFLOW_X) != changed_properties.end() ||
 		changed_properties.find(OVERFLOW_Y) != changed_properties.end())
 	{
@@ -1535,6 +1652,23 @@ void Element::DirtyLayout()
 		document->DirtyLayout();
 }
 
+/// Increment/Decrement the layout lock
+void Element::LockLayout(bool lock)
+{
+	Element* document = GetOwnerDocument();
+	if (document != NULL)
+		document->LockLayout(lock);
+}
+
+// Forces a re-layout of this element, and any other children required.
+bool Element::IsLayoutDirty()
+{
+	Element* document = GetOwnerDocument();
+	if (document != NULL)
+		return document->IsLayoutDirty();
+	return false;
+}
+
 // Forces a reevaluation of applicable font effects.
 void Element::DirtyFont()
 {
@@ -1558,7 +1692,8 @@ void Element::OnReferenceDeactivate()
 
 void Element::ProcessEvent(Event& event)
 {
-	if (event == MOUSEDOWN && IsPointWithinElement(Vector2f(event.GetParameter< float >("mouse_x", 0), event.GetParameter< float >("mouse_y", 0))))
+	if (event == MOUSEDOWN && IsPointWithinElement(Vector2f(event.GetParameter< float >("mouse_x", 0), event.GetParameter< float >("mouse_y", 0))) &&
+		event.GetParameter< int >("button", 0) == 0)
 		SetPseudoClass("active", true);
 
 	if (event == MOUSESCROLL)
@@ -1602,7 +1737,7 @@ void Element::GetRML(String& content)
 	int index = 0;
 	String name;
 	String value;
-	while (IterateAttributes(index, name, value))
+	while (IterateAttributes(index, name, value))	
 	{
 		size_t length = name.Length() + value.Length() + 8;
 		String attribute(length, " %s=\"%s\"", name.CString(), value.CString());
@@ -1626,7 +1761,7 @@ void Element::GetRML(String& content)
 }
 
 void Element::SetParent(Element* _parent)
-{
+{	
 	// If there's an old parent, detach from it first.
 	if (parent &&
 		parent != _parent)
@@ -1682,7 +1817,7 @@ void Element::DirtyOffset()
 
 void Element::UpdateOffset()
 {
-	int position_property = GetProperty< int >(POSITION);
+	int position_property = GetPosition();
 	if (position_property == POSITION_ABSOLUTE ||
 		position_property == POSITION_FIXED)
 	{
@@ -1695,31 +1830,23 @@ void Element::UpdateOffset()
 			const Property *right = GetLocalProperty(RIGHT);
 			// If the element is anchored left, then the position is offset by that resolved value.
 			if (left != NULL && left->unit != Property::KEYWORD)
-			{
 				relative_offset_base.x = parent_box.GetEdge(Box::BORDER, Box::LEFT) + (ResolveProperty(LEFT, containing_block.x) + GetBox().GetEdge(Box::MARGIN, Box::LEFT));
-			}
 			// If the element is anchored right, then the position is set first so the element's right-most edge
 			// (including margins) will render up against the containing box's right-most content edge, and then
 			// offset by the resolved value.
-			else if (right != NULL && right->unit != Property::KEYWORD)
-			{
+			if (right != NULL && right->unit != Property::KEYWORD)
 				relative_offset_base.x = containing_block.x + parent_box.GetEdge(Box::BORDER, Box::LEFT) - (ResolveProperty(RIGHT, containing_block.x) + GetBox().GetSize(Box::BORDER).x + GetBox().GetEdge(Box::MARGIN, Box::RIGHT));
-			}
 
 			const Property *top = GetLocalProperty(TOP);
 			const Property *bottom = GetLocalProperty(BOTTOM);
 			// If the element is anchored top, then the position is offset by that resolved value.
 			if (top != NULL && top->unit != Property::KEYWORD)
-			{
 				relative_offset_base.y = parent_box.GetEdge(Box::BORDER, Box::TOP) + (ResolveProperty(TOP, containing_block.y) + GetBox().GetEdge(Box::MARGIN, Box::TOP));
-			}
 			// If the element is anchored bottom, then the position is set first so the element's right-most edge
 			// (including margins) will render up against the containing box's right-most content edge, and then
 			// offset by the resolved value.
 			else if (bottom != NULL && bottom->unit != Property::KEYWORD)
-			{
 				relative_offset_base.y = containing_block.y + parent_box.GetEdge(Box::BORDER, Box::TOP) - (ResolveProperty(BOTTOM, containing_block.y) + GetBox().GetSize(Box::BORDER).y + GetBox().GetEdge(Box::MARGIN, Box::BOTTOM));
-			}
 		}
 	}
 	else if (position_property == POSITION_RELATIVE)
@@ -1783,11 +1910,11 @@ void Element::BuildStackingContext(ElementList* new_stacking_context)
 		std::pair< Element*, float > ordered_child;
 		ordered_child.first = child;
 
-		if (child->GetProperty< int >(POSITION) != POSITION_STATIC)
+		if (child->GetPosition() != POSITION_STATIC)
 			ordered_child.second = 3;
-		else if (child->GetProperty< int >(FLOAT) != FLOAT_NONE)
+		else if (child->GetFloat() != FLOAT_NONE)
 			ordered_child.second = 1;
-		else if (child->GetProperty< int >(DISPLAY) == DISPLAY_BLOCK)
+		else if (child->GetDisplay() == DISPLAY_BLOCK)
 			ordered_child.second = 0;
 		else
 			ordered_child.second = 2;
@@ -1825,7 +1952,7 @@ void Element::DirtyStructure()
 {
 	// Clear the cached owner document
 	owner_document = NULL;
-
+	
 	// Inform all children that the structure is drity
 	for (size_t i = 0; i < children.size(); ++i)
 	{
