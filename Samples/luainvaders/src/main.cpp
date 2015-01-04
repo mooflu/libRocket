@@ -44,13 +44,15 @@ Rocket::Core::Context* context = NULL;
 
 void DoAllocConsole();
 
+ShellRenderInterfaceExtensions *shell_renderer;
+
 void GameLoop()
 {
 	context->Update();
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	shell_renderer->PrepareRenderBuffer();
 	context->Render();
-	Shell::FlipBuffers();
+	shell_renderer->PresentRenderBuffer();
 }
 
 #if defined ROCKET_PLATFORM_WIN32
@@ -60,29 +62,33 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, char*, int)
 int main(int, char**)
 #endif
 {
-	#ifdef ROCKET_PLATFORM_MACOSX
-	#define APP_PATH "../"
-	#define ROCKET_PATH "../../bin/"
-	#else
-	#define APP_PATH "../Samples/luainvaders/"
-	#define ROCKET_PATH "."
-	#endif
+#ifdef ROCKET_PLATFORM_LINUX
+#define APP_PATH "../Samples/luainvaders/"
+#else
+#define APP_PATH "../../Samples/luainvaders/"
+#endif
 
-	#ifdef ROCKET_PLATFORM_WIN32
+#ifdef ROCKET_PLATFORM_WIN32
 	DoAllocConsole();
-	#endif
+#endif
+
+	int window_width = 1024;
+	int window_height = 768;
+
+	ShellRenderInterfaceOpenGL opengl_renderer;
+	shell_renderer = &opengl_renderer;
 
 	// Generic OS initialisation, creates a window and attaches OpenGL.
-	if (!Shell::Initialise("../Samples/luainvaders/") ||
-		!Shell::OpenWindow("Rocket Invaders from Mars (Lua Powered)", true))
+	if (!Shell::Initialise(APP_PATH) ||
+		!Shell::OpenWindow("Rocket Invaders from Mars (Lua Powered)", shell_renderer, window_width, window_height, false))
 	{
 		Shell::Shutdown();
 		return -1;
 	}
 
 	// Rocket initialisation.
-	ShellRenderInterfaceOpenGL opengl_renderer;
 	Rocket::Core::SetRenderInterface(&opengl_renderer);
+	opengl_renderer.SetViewport(window_width, window_height);
 
 	ShellSystemInterface system_interface;
 	Rocket::Core::SetSystemInterface(&system_interface);
@@ -92,11 +98,11 @@ int main(int, char**)
 	Rocket::Controls::Initialise();
 
 	// Initialise the Lua interface
-    Rocket::Core::Lua::Interpreter::Initialise();
-    Rocket::Controls::Lua::RegisterTypes(Rocket::Core::Lua::Interpreter::GetLuaState());
+	Rocket::Core::Lua::Interpreter::Initialise();
+	Rocket::Controls::Lua::RegisterTypes(Rocket::Core::Lua::Interpreter::GetLuaState());
 
 	// Create the main Rocket context and set it on the shell's input layer.
-	context = Rocket::Core::CreateContext("main", Rocket::Core::Vector2i(1024, 768));
+	context = Rocket::Core::CreateContext("main", Rocket::Core::Vector2i(window_width, window_height));
 	if (context == NULL)
 	{
 		Rocket::Core::Shutdown();
@@ -106,6 +112,7 @@ int main(int, char**)
 
 	Rocket::Debugger::Initialise(context);
 	Input::SetContext(context);
+	shell_renderer->SetContext(context);
 
 	// Load the font faces required for Invaders.
 	Shell::LoadFonts("../assets/");
@@ -124,7 +131,7 @@ int main(int, char**)
 
 	// Fire off the startup script.
     LuaInterface::Initialise(Rocket::Core::Lua::Interpreter::GetLuaState()); //the tables/functions defined in the samples
-    Rocket::Core::Lua::Interpreter::LoadFile(Rocket::Core::String(APP_PATH).Append("lua/start.lua"));
+    Rocket::Core::Lua::Interpreter::LoadFile(Rocket::Core::String("lua/start.lua"));
 
 	Shell::EventLoop(GameLoop);	
 

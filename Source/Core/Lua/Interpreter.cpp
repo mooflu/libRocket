@@ -65,10 +65,12 @@ typedef Rocket::Core::ElementDocument Document;
 
 void Interpreter::Startup()
 {
-    Log::Message(Log::LT_INFO, "Loading Lua interpreter");
-    _L = luaL_newstate();
-    luaL_openlibs(_L);
-
+	if(_L == NULL)
+	{
+		Log::Message(Log::LT_INFO, "Loading Lua interpreter");
+		_L = luaL_newstate();
+		luaL_openlibs(_L);
+	}
     RegisterCoreTypes(_L);
 }
 
@@ -107,7 +109,18 @@ void Interpreter::LoadFile(const String& file)
     //use the file interface to get the contents of the script
     Rocket::Core::FileInterface* file_interface = Rocket::Core::GetFileInterface();
     Rocket::Core::FileHandle handle = file_interface->Open(file);
+    if(handle == 0) {
+        lua_pushfstring(_L, "LoadFile: Unable to open file: %s", file.CString());
+        Report(_L);
+        return;
+    }
+
     size_t size = file_interface->Length(handle);
+    if(size == 0) {
+        lua_pushfstring(_L, "LoadFile: File is 0 bytes in size: %s", file.CString());
+        Report(_L);
+        return;
+    }
     char* file_contents = new char[size];
     file_interface->Read(file_contents,size,handle);
     file_interface->Close(handle);
@@ -145,7 +158,8 @@ void Interpreter::LoadString(const Rocket::Core::String& code, const Rocket::Cor
 void Interpreter::BeginCall(int funRef)
 {
     lua_settop(_L,0); //empty stack
-    lua_getref(_L,funRef);
+    //lua_getref(_L,funRef);
+    lua_rawgeti(_L, LUA_REGISTRYINDEX, (int)funRef);
 }
 
 bool Interpreter::ExecuteCall(int params, int res)
@@ -208,7 +222,14 @@ void Interpreter::OnShutdown()
 
 void Interpreter::Initialise()
 {
-    Rocket::Core::RegisterPlugin(new Interpreter());
+    Rocket::Core::Lua::Interpreter::Initialise(NULL);
+}
+
+void Interpreter::Initialise(lua_State *luaStatePointer)
+{
+	Interpreter *iPtr = new Interpreter();
+	iPtr->_L = luaStatePointer;
+	Rocket::Core::RegisterPlugin(iPtr);
 }
 
 void Interpreter::Shutdown()

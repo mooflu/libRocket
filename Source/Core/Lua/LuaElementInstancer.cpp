@@ -27,6 +27,7 @@
 
 #include "precompiled.h"
 #include "LuaElementInstancer.h"
+#include <Rocket/Core/Platform.h>
 #include <Rocket/Core/Lua/LuaType.h>
 #include <Rocket/Core/Lua/Interpreter.h>
 #include <Rocket/Core/Log.h>
@@ -48,8 +49,11 @@ LuaElementInstancer::LuaElementInstancer(lua_State* L) : ElementInstancer(), ref
     lua_pop(L,1); //pop the ELEMENTINSTANCERFUNCTIONS table
 }
 
-Element* LuaElementInstancer::InstanceElement(Element* ROCKET_UNUSED(parent), const String& tag, const XMLAttributes& ROCKET_UNUSED(attributes))
+Element* LuaElementInstancer::InstanceElement(Element* ROCKET_UNUSED_PARAMETER(parent), const String& tag, const XMLAttributes& ROCKET_UNUSED_PARAMETER(attributes))
 {
+    ROCKET_UNUSED(parent);
+    ROCKET_UNUSED(attributes);
+
     lua_State* L = Interpreter::GetLuaState();
     int top = lua_gettop(L);
     Element* ret = NULL;

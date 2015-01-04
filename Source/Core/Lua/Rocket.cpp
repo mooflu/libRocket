@@ -311,13 +311,15 @@ RegType<LuaRocket> LuaRocketMethods[] =
     { NULL, NULL },
 };
 
-luaL_reg LuaRocketGetters[] = 
+luaL_Reg LuaRocketGetters[] = 
 {
     LUAGETTER(LuaRocket,contexts)
+    LUAGETTER(LuaRocket,key_identifier)
+    LUAGETTER(LuaRocket,key_modifier)
     { NULL, NULL },
 };
 
-luaL_reg LuaRocketSetters[] = 
+luaL_Reg LuaRocketSetters[] = 
 {
     { NULL, NULL },
 };

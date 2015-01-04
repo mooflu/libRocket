@@ -109,9 +109,19 @@ int LuaType<T>::push(lua_State *L, T* obj, bool gc)
         }
         else
         {
-            if(IsReferenceCounted<T>())
-                ((Rocket::Core::ReferenceCountable*)obj)->AddReference();
+            //In case this is an address that has been pushed
+            //to lua before, we need to set it to nil
+            lua_pushnil(L); // ->[4] = nil
+            lua_setfield(L,-2,name); //represents t[k] = v, [-2 = 3] = t -> v = [4], k = <ClassName>; pop [4]
         }
+
+        if(IsReferenceCounted<T>())
+        {
+            //If you look at the gc_T function, reference countables do not
+            //care about the "DO NOT TRASH" table
+            ((Rocket::Core::ReferenceCountable*)obj)->AddReference();
+        }
+
         lua_pop(L,1); // -> pop [3]
     }
     lua_settop(L,ud); //[ud = 2] -> remove everything that is above 2, top = [2]
@@ -167,19 +177,23 @@ int LuaType<T>::gc_T(lua_State* L)
     T * obj = check(L,1); //[1] = this userdata
     if(obj == NULL)
         return 0;
+    if(IsReferenceCounted<T>())
+    {
+        // ReferenceCountables do not care about the "DO NOT TRASH" table.
+        // Because userdata is pushed which contains a pointer to the pointer
+        // of 'obj', 'obj' will be garbage collected for every time 'obj' was pushed.
+        ((Rocket::Core::ReferenceCountable*)obj)->RemoveReference();
+        return 0;
+    }
     lua_getfield(L,LUA_REGISTRYINDEX,"DO NOT TRASH"); //->[2] = return value from this
     if(lua_istable(L,-1) ) //[-1 = 2], if it is a table
     {
         char name[32];
         tostring(name,obj);
         lua_getfield(L,-1, std::string(name).c_str()); //[-1 = 2] -> [3] = the value returned from if <ClassName> exists in the table to not gc
-        if(lua_isnil(L,-1) ) //[-1 = 3] if it doesn't exist, then we are free to garbage collect c++ side
+        if(lua_isnoneornil(L,-1) ) //[-1 = 3] if it doesn't exist, then we are free to garbage collect c++ side
         {
-            if(IsReferenceCounted<T>())
-            {
-                ((Rocket::Core::ReferenceCountable*)obj)->RemoveReference();
-            }
-            else
+            if(!IsReferenceCounted<T>())
             {
                 delete obj;
                 obj = NULL;
@@ -314,7 +328,7 @@ void LuaType<T>::_regfunctions(lua_State* L, int meta, int methods)
         lua_setfield(L,methods,"__getters"); // pop [1]
         lua_getfield(L,methods,"__getters"); // -> table [1]
     }
-    for(luaL_reg* m = (luaL_reg*)GetAttrTable<T>(); m->name; m++)
+    for(luaL_Reg* m = (luaL_Reg*)GetAttrTable<T>(); m->name; m++)
     {
         lua_pushcfunction(L,m->func); // -> [2] is this function
         lua_setfield(L,-2,m->name); //[-2 = 1] -> __getters.name = function
@@ -330,7 +344,7 @@ void LuaType<T>::_regfunctions(lua_State* L, int meta, int methods)
         lua_setfield(L,methods,"__setters"); // pop [1]
         lua_getfield(L,methods,"__setters"); // -> table [1]
     }
-    for(luaL_reg* m = (luaL_reg*)SetAttrTable<T>(); m->name; m++)
+    for(luaL_Reg* m = (luaL_Reg*)SetAttrTable<T>(); m->name; m++)
     {
         lua_pushcfunction(L,m->func); // -> [2] is this function
         lua_setfield(L,-2,m->name); //[-2 = 1] -> __setters.name = function
