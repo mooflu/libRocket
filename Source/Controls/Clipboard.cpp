@@ -25,10 +25,10 @@
  *
  */
 
-#include <Rocket/Controls/Clipboard.h>
-#include <Rocket/Core/Types.h>
-#include <Rocket/Core/WString.h>
-#include "Rocket/Core/Core.h"
+#include "../../Include/Rocket/Controls/Clipboard.h"
+#include "../../Include/Rocket/Core/Types.h"
+#include "../../Include/Rocket/Core/WString.h"
+#include "../../Include/Rocket/Core/Core.h"
 
 namespace Rocket {
 namespace Controls {

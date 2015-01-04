@@ -28,10 +28,10 @@
 #ifndef ROCKETCOREELEMENTUTILITIES_H
 #define ROCKETCOREELEMENTUTILITIES_H
 
-#include <Rocket/Core/Header.h>
-#include <Rocket/Core/Box.h>
-#include <Rocket/Core/WString.h>
-#include <Rocket/Core/Types.h>
+#include "Header.h"
+#include "Box.h"
+#include "WString.h"
+#include "Types.h"
 
 namespace Rocket {
 namespace Core {
@@ -71,6 +71,11 @@ public:
 	/// @param[in] root_element First element to check.
 	/// @param[in] tag Tag to search for.
 	static void GetElementsByTagName(ElementList& elements, Element* root_element, const String& tag);
+	/// Get all elements with the given class set on them.
+	/// @param[out] elements Resulting elements.
+	/// @param[in] root_element First element to check.
+	/// @param[in] tag Class name to search for.
+	static void GetElementsByClassName(ElementList& elements, Element* root_element, const String& class_name);
 
 	/// Returns an element's font face.
 	/// @param[in] element The element to determine the font face for.

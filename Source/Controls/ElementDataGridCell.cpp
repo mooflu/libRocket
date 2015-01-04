@@ -25,10 +25,10 @@
  *
  */
 
-#include <Rocket/Controls/ElementDataGridCell.h>
-#include <Rocket/Core/Event.h>
-#include <Rocket/Core/Property.h>
-#include <Rocket/Controls/ElementDataGrid.h>
+#include "../../Include/Rocket/Controls/ElementDataGridCell.h"
+#include "../../Include/Rocket/Core/Event.h"
+#include "../../Include/Rocket/Core/Property.h"
+#include "../../Include/Rocket/Controls/ElementDataGrid.h"
 
 namespace Rocket {
 namespace Controls {
@@ -39,18 +39,27 @@ ElementDataGridCell::ElementDataGridCell(const Rocket::Core::String& tag) : Core
 
 ElementDataGridCell::~ElementDataGridCell()
 {
-	if (header)
+	if (header) {
 		header->RemoveEventListener("resize", this);
+		header->RemoveReference();
+	}
 }
 
-void ElementDataGridCell::Initialise(Core::Element* _header)
+void ElementDataGridCell::Initialise(int _column, Core::Element* _header)
 {
+	column = _column;
 	header = _header;
 	if (header)
 	{
+		header->AddReference();
 		header->AddEventListener("resize", this);
 		SetProperty("width", Core::Property(header->GetBox().GetSize(Core::Box::MARGIN).x, Core::Property::PX));
 	}
+}
+
+int ElementDataGridCell::GetColumn()
+{
+	return column;
 }
 
 void ElementDataGridCell::ProcessEvent(Core::Event& event)

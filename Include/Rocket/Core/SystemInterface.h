@@ -28,11 +28,11 @@
 #ifndef ROCKETCORESYSTEMINTERFACE_H
 #define ROCKETCORESYSTEMINTERFACE_H
 
-#include <Rocket/Core/Log.h>
-#include <Rocket/Core/ReferenceCountable.h>
-#include <Rocket/Core/String.h>
-#include <Rocket/Core/WString.h>
-#include <Rocket/Core/Header.h>
+#include "Log.h"
+#include "ReferenceCountable.h"
+#include "String.h"
+#include "WString.h"
+#include "Header.h"
 
 namespace Rocket {
 namespace Core {
